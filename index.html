@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Jeferson Money Earns — Mira y gana</title>
+  <meta name="description" content="Jeferson Money Earns — mira videos y solicita retiros (Yape / BCP / MercadoPago). Requiere backend seguro." />
+  <style>
+    :root{
+      --bg:#071027; --card:#07162a; --accent:#06b6d4; --muted:#9fb3c8;
+      --glass:rgba(255,255,255,0.03); --success:#34d399; --danger:#ff6b6b;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    *{box-sizing:border-box}
+    body{margin:0; background:linear-gradient(180deg,#071021 0%, #021427 100%); color:#e6eef8; min-height:100vh; padding:20px;}
+    header{display:flex; justify-content:space-between; align-items:center; gap:12px; max-width:1100px; margin:0 auto;}
+    h1{margin:0;font-size:20px}
+    .container{max-width:1100px;margin:18px auto}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:12px; padding:16px; box-shadow:0 6px 18px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.03);}
+    .grid{display:grid; grid-template-columns:1fr 360px; gap:16px;}
+    input, select, textarea, button{width:100%; padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background:var(--card); color:#e6eef8; margin:6px 0; font-size:14px}
+    button{cursor:pointer; background:linear-gradient(90deg,var(--accent),#0891b2); border:none; color:#022; font-weight:700}
+    .muted{color:var(--muted); font-size:13px}
+    .small{font-size:13px; color:var(--muted)}
+    .video-wrap{margin-top:12px; display:flex; flex-direction:column; gap:12px}
+    .wallet{font-size:18px; font-weight:700}
+    .tab{display:flex; gap:8px; margin-bottom:8px}
+    .tab button{background:transparent; border:1px solid rgba(255,255,255,0.04); padding:8px 12px; border-radius:999px; color:var(--muted)}
+    .tab button.active{background:rgba(255,255,255,0.02); color:#e6eef8}
+    a.link{color:var(--accent); text-decoration:none}
+    footer{max-width:1100px; margin:18px auto; color:var(--muted); font-size:13px}
+    .inline{display:inline-block; width:auto}
+    .center{text-align:center}
+    .notice{background:rgba(255,255,255,0.01); padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.02); margin-top:8px}
+    .row{display:flex; gap:8px}
+    @media (max-width: 900px) {
+      .grid{grid-template-columns:1fr}
+      .video-wrap iframe, .video-wrap video { height:260px }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Jeferson Money Earns</h1>
+      <div class="small muted">Demo: interfaz cliente. Conecta con backend seguro para pagos reales.</div>
+    </div>
+    <div id="userArea" class="small"></div>
+  </header>
+
+  <main class="container">
+    <div class="grid">
+      <div>
+        <div class="card" id="authCard">
+          <div class="tab">
+            <button id="tabRegister" class="active">Registrar</button>
+            <button id="tabLogin">Iniciar sesión</button>
+          </div>
+
+          <div id="registerForm">
+            <input id="regEmail" placeholder="Email" />
+            <input id="regName" placeholder="Nombre completo" />
+            <input id="regPassword" type="password" placeholder="Contraseña" />
+            <div class="row">
+              <button id="btnRegister" class="inline">Registrar (bono)</button>
+              <button id="btnDemoFill" class="inline">Rellenar demo</button>
+            </div>
+            <div class="muted small">Al registrarte recibirás un bono de bienvenida (si el backend tiene WELCOME_BONUS configurado).</div>
+          </div>
+
+          <div id="loginForm" style="display:none">
+            <input id="loginEmail" placeholder="Email" />
+            <input id="loginPassword" type="password" placeholder="Contraseña" />
+            <button id="btnLogin">Iniciar sesión</button>
+            <div class="muted small">Si eres admin, cambia role en la base de datos o usa Prisma Studio.</div>
+          </div>
+        </div>
+
+        <div class="card" id="videosCard" style="margin-top:12px; display:none">
+          <h3>Videos disponibles</h3>
+          <p class="small muted">Reproduce videos para ganar. Cada 5s en reproducción se contabiliza y el backend acredita saldo (si corresponde).</p>
+          <div id="videosList" class="video-wrap"></div>
+          <div class="notice small muted">
+            Usa embeds de YouTube/TikTok o enlaces directos. No subas contenido con copyright sin licencia.
+          </div>
+        </div>
+
+        <div class="card" id="kycCard" style="margin-top:12px; display:none">
+          <h3>Subir KYC (DNI)</h3>
+          <input id="kycDni" placeholder="Número de DNI" />
+          <input id="kycFile" type="file" accept="image/*,application/pdf" />
+          <div class="row">
+            <button id="btnKycUpload">Subir KYC</button>
+            <button id="btnKycStatus">Ver estado KYC</button>
+          </div>
+          <div id="kycStatus" class="small muted"></div>
+        </div>
+
+        <div class="card" id="payoutCard" style="margin-top:12px; display:none">
+          <h3>Solicitar retiro</h3>
+          <p class="small muted">Selecciona método: Yape, BCP o MercadoPago. El backend realizará la solicitud al proveedor (no desde el cliente).</p>
+
+          <label class="small">Monto a retirar (S/)</label>
+          <input id="payoutAmount" type="number" min="0" step="0.01" placeholder="Ej. 10.00" />
+
+          <label class="small">Método</label>
+          <select id="payoutMethod">
+            <option value="yape">Yape (teléfono)</option>
+            <option value="bcp">BCP (cuenta bancaria)</option>
+            <option value="mercadopago">MercadoPago (cuenta)</option>
+          </select>
+
+          <div id="methodYape" style="margin-top:6px">
+            <input id="yapePhone" placeholder="Teléfono Yape (ej. 9XXXXXXXX)" />
+            <input id="yapeHolderName" placeholder="Nombre titular" />
+            <input id="yapeDniHolder" placeholder="DNI titular" />
+          </div>
+
+          <div id="methodBcp" style="margin-top:6px; display:none">
+            <select id="bcpAccType">
+              <option value="cuenta_ahorros">Cuenta de Ahorros</option>
+              <option value="cuenta_corriente">Cuenta Corriente</option>
+            </select>
+            <input id="bcpAccNumber" placeholder="Número de cuenta (ej. 12345678901)" />
+            <input id="bcpHolderName" placeholder="Nombre titular" />
+            <input id="bcpHolderDni" placeholder="DNI titular" />
+          </div>
+
+          <div id="methodMp" style="margin-top:6px; display:none">
+            <input id="mpEmail" placeholder="Email de MercadoPago" />
+            <input id="mpHolderName" placeholder="Nombre titular" />
+            <input id="mpHolderDni" placeholder="DNI titular" />
+          </div>
+
+          <button id="btnRequestPayout">Pedir retiro</button>
+          <div id="payoutResult" class="small muted"></div>
+        </div>
+      </div>
+
+      <aside>
+        <div class="card">
+          <div class="wallet">Saldo: <span id="balance">S/0.00</span></div>
+          <div class="small muted">Saldo disponible y pendiente (backend required)</div>
+          <hr />
+          <h4>Atajos</h4>
+          <div class="row">
+            <button id="btnOpenAdmin" class="inline">Ir a Admin</button>
+            <button id="btnImportVideos" class="inline">Importar Videos</button>
+          </div>
+          <div style="margin-top:8px" class="small muted">
+            Soporte: <a class="link" target="_blank" href="https://wa.me/51999999999">WhatsApp</a> · <a class="link" target="_blank" href="https://t.me/YourDemoBot">Telegram</a>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h4>Configuración</h4>
+          <div class="small muted">El frontend usa la API: <code id="apiBaseTag"></code></div>
+          <pre id="configBox" class="small muted" style="background:var(--glass); padding:8px; border-radius:6px; margin-top:8px;"></pre>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <footer>
+    <div class="small muted">
+      Nota: este archivo es la interfaz cliente. Para pagos reales (Yape/BCP/MercadoPago) necesitas un backend seguro y contratos con proveedores. Nunca expongas claves en el frontend.
+    </div>
+  </footer>
+
+  <script>
+    /**
+     * index.html — cliente para Jeferson Money Earns
+     * API_BASE: cambiar aquí si es necesario.
+     * Este archivo envía requests al backend que debe implementar las rutas:
+     *  - POST /api/auth/register
+     *  - POST /api/auth/login
+     *  - POST /api/kyc/upload (multipart/form-data, Authorization Bearer)
+     *  - GET  /api/videos
+     *  - POST /api/watch/progress (Authorization Bearer)
+     *  - GET  /api/wallet (Authorization Bearer)
+     *  - POST /api/payouts/request (Authorization Bearer)
+     *
+     * Importante: el frontend NUNCA debe llamar APIs de pago/banco directamente.
+     */
+
+    const API_BASE = "https://api.mokaup-earns.com";
+    document.getElementById('apiBaseTag').innerText = API_BASE;
+    document.getElementById('configBox').innerText = `API_BASE: ${API_BASE}`;
+
+    // Utilities
+    const qs = id => document.getElementById(id);
+    const show = msg => alert(msg);
+
+    // Session
+    function saveToken(t){ localStorage.setItem('jme_token', t); }
+    function getToken(){ return localStorage.getItem('jme_token'); }
+    function clearToken(){ localStorage.removeItem('jme_token'); }
+    function saveUserInfo(obj){ localStorage.setItem('jme_user', JSON.stringify(obj)); }
+    function getUserInfo(){ try { return JSON.parse(localStorage.getItem('jme_user')||'null'); } catch(e) { return null; } }
+
+    // Auth UI toggles
+    qs("tabRegister").addEventListener("click", ()=>{ qs("registerForm").style.display="block"; qs("loginForm").style.display="none"; qs("tabRegister").classList.add("active"); qs("tabLogin").classList.remove("active"); });
+    qs("tabLogin").addEventListener("click", ()=>{ qs("registerForm").style.display="none"; qs("loginForm").style.display="block"; qs("tabLogin").classList.add("active"); qs("tabRegister").classList.remove("active"); });
+
+    // Demo fill
+    qs("btnDemoFill").addEventListener("click", ()=>{
+      qs("regEmail").value = `user${Math.floor(Math.random()*10000)}@demo.local`;
+      qs("regName").value = "Usuario Demo";
+      qs("regPassword").value = "password123";
+    });
+
+    // Register
+    qs("btnRegister").addEventListener("click", async ()=>{
+      const email = qs("regEmail").value.trim();
+      const name = qs("regName").value.trim();
+      const password = qs("regPassword").value;
+      if(!email || !password){ show("Email y contraseña requeridos"); return; }
+      try {
+        const res = await fetch(API_BASE + "/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, name })
+        });
+        const j = await res.json();
+        if(!res.ok) { show("Error registro: " + (j.error || JSON.stringify(j))); return; }
+        saveToken(j.token);
+        saveUserInfo(j.user);
+        updateUIAfterAuth();
+        show("Registrado correctamente. Bono abonado si backend lo tiene configurado.");
+      } catch (err) { show("Error: " + err.message); }
+    });
+
+    // Login
+    qs("btnLogin").addEventListener("click", async ()=>{
+      const email = qs("loginEmail").value.trim();
+      const password = qs("loginPassword").value;
+      if(!email || !password){ show("Email y contraseña requeridos"); return; }
+      try {
+        const res = await fetch(API_BASE + "/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+        const j = await res.json();
+        if(!res.ok){ show("Error login: " + (j.error || JSON.stringify(j))); return; }
+        saveToken(j.token);
+        saveUserInfo(j.user);
+        updateUIAfterAuth();
+        show("Login correcto.");
+      } catch (err) { show("Error: " + err.message); }
+    });
+
+    // Render header user area
+    function renderUserArea(){
+      const user = getUserInfo();
+      const area = qs("userArea");
+      area.innerHTML = "";
+      if(user && getToken()){
+        const span = document.createElement("span");
+        span.innerHTML = `<strong>${user.name||user.email}</strong> · <a href="#" id="logoutLink" class="small muted">Cerrar sesión</a>`;
+        area.appendChild(span);
+        setTimeout(()=>{ const l = document.getElementById('logoutLink'); if(l) l.addEventListener('click', e=>{ e.preventDefault(); clearToken(); localStorage.removeItem('jme_user'); updateUIAfterAuth(); }); }, 50);
+      } else {
+        area.innerHTML = `<a href="#" onclick="document.getElementById('tabLogin').click();return false" class="small muted">Entrar / Registrar</a>`;
+      }
+    }
+
+    // KYC upload
+    qs("btnKycUpload").addEventListener("click", async ()=>{
+      const token = getToken();
+      if(!token){ show("Inicia sesión primero"); return; }
+      const dni = qs("kycDni").value.trim();
+      const fileInput = qs("kycFile");
+      if(!dni || !fileInput.files.length){ show("DNI y archivo requeridos"); return; }
+      const form = new FormData();
+      form.append("dni", dni);
+      form.append("file", fileInput.files[0]);
+
+      try {
+        const res = await fetch(API_BASE + "/api/kyc/upload", {
+          method: "POST",
+          headers: { Authorization: "Bearer " + token },
+          body: form
+        });
+        const j = await res.json();
+        if(!res.ok){ qs("kycStatus").innerText = "Error subida: " + (j.error || JSON.stringify(j)); return; }
+        qs("kycStatus").innerText = "KYC subido. Estado: " + (j.kyc?.status || "pending");
+      } catch (err){ qs("kycStatus").innerText = "Error: " + err.message; }
+    });
+
+    qs("btnKycStatus").addEventListener("click", async ()=>{
+      const token = getToken();
+      if(!token){ show("Inicia sesión primero"); return; }
+      try {
+        const res = await fetch(API_BASE + "/api/admin/kyc/list", { headers: { Authorization: "Bearer " + token }});
+        const j = await res.json();
+        if(!res.ok){ show("No autorizado o error"); return; }
+        // buscar kyc del usuario
+        const user = getUserInfo();
+        const mine = (j.data || []).find(x => x.user?.email === user?.email);
+        qs("kycStatus").innerText = mine ? `Estado: ${mine.status}` : "No se encontró registro KYC";
+      } catch (err){ qs("kycStatus").innerText = "Error: " + err.message; }
+    });
+
+    // Load videos
+    async function loadVideos(){
+      try {
+        const res = await fetch(API_BASE + "/api/videos");
+        const list = await res.json();
+        const container = qs("videosList");
+        container.innerHTML = "";
+        if(!res.ok){ container.innerHTML = "<div class='small muted'>No se pudieron cargar videos</div>"; return; }
+        if(!Array.isArray(list) || list.length===0){ container.innerHTML = "<div class='small muted'>No hay videos disponibles.</div>"; return; }
+
+        list.forEach(v=>{
+          const wrap = document.createElement("div");
+          wrap.className = "card";
+          const title = document.createElement("h4"); title.style.margin="6px 0"; title.innerText = v.title || v.sourceUrl;
+          wrap.appendChild(title);
+
+          const src = (v.sourceUrl||"").toString();
+          const lower = src.toLowerCase();
+
+          if(lower.includes("youtube.com") || lower.includes("youtu.be")){
+            const id = (src.match(/(?:v=|\/embed\/|\.be\/)([A-Za-z0-9_-]{6,})/)||[])[1] || "";
+            const iframe = document.createElement("iframe");
+            iframe.width = "100%"; iframe.height = "360"; iframe.src = "https://www.youtube.com/embed/" + id + "?rel=0";
+            iframe.frameBorder = "0"; iframe.allow = "autoplay; encrypted-media";
+            wrap.appendChild(iframe);
+
+            const btn = document.createElement("button"); btn.innerText = "Simular +5s (demo)";
+            btn.style.marginTop = "8px";
+            btn.addEventListener("click", ()=> simulateHeartbeat(v.id || v.title));
+            wrap.appendChild(btn);
+          } else if(lower.includes("tiktok.com")){
+            const iframe = document.createElement("iframe");
+            iframe.width = "100%"; iframe.height = "600"; iframe.src = v.sourceUrl;
+            iframe.frameBorder = "0";
+            wrap.appendChild(iframe);
+            const btn = document.createElement("button"); btn.innerText = "Simular +5s (demo)"; btn.style.marginTop = "8px";
+            btn.addEventListener("click", ()=> simulateHeartbeat(v.id || v.title));
+            wrap.appendChild(btn);
+          } else {
+            // direct video (mp4)
+            const video = document.createElement("video");
+            video.src = src;
+            video.controls = true;
+            video.width = 720;
+            video.style.maxWidth = "100%";
+            wrap.appendChild(video);
+            // add heartbeat for HTML5 video
+            registerVideoHeartbeat(video, v.id || v.title);
+          }
+
+          const meta = document.createElement("div"); meta.className = "small muted"; meta.style.marginTop="8px";
+          meta.innerText = `Pago por segundo: ${(v.payoutPerSecond ?? 1)} centavos`;
+          wrap.appendChild(meta);
+
+          container.appendChild(wrap);
+        });
+      } catch (err){ qs("videosList").innerHTML = "<div class='small muted'>Error cargando videos: " + err.message + "</div>"; }
+    }
+
+    // Register heartbeat for HTML5 video elements
+    function registerVideoHeartbeat(videoEl, videoId){
+      let playing = false;
+      videoEl.addEventListener('play', ()=> playing = true);
+      videoEl.addEventListener('pause', ()=> playing = false);
+      videoEl.addEventListener('ended', ()=> playing = false);
+
+      setInterval(async ()=>{
+        if(!playing) return;
+        const token = getToken();
+        if(!token) return;
+        try {
+          await fetch(API_BASE + "/api/watch/progress", {
+            method: "POST",
+            headers: { "Content-Type":"application/json", Authorization: "Bearer " + token },
+            body: JSON.stringify({ videoId, currentTime: Math.floor(videoEl.currentTime), isPlaying: true, clientTimestamp: Date.now() })
+          });
+          await refreshBalance();
+        } catch (err) {
+          console.warn("heartbeat error", err);
+        }
+      }, 5000);
+    }
+
+    // simulate heartbeat for embeds or quick demo
+    async function simulateHeartbeat(videoId){
+      const token = getToken();
+      if(!token){ show("Inicia sesión para que el backend pueda acreditar segundos"); return; }
+      try {
+        const res = await fetch(API_BASE + "/api/watch/progress", {
+          method: "POST",
+          headers: { "Content-Type":"application/json", Authorization: "Bearer " + token },
+          body: JSON.stringify({ videoId, currentTime: 0, isPlaying: true, clientTimestamp: Date.now() })
+        });
+        const j = await res.json();
+        if(!res.ok) show("Error: " + (j.error || JSON.stringify(j)));
+        else {
+          show("Heartbeat enviado. Segundos añadidos: " + (j.addedSeconds || 0));
+          await refreshBalance();
+        }
+      } catch (err){ show("Error conectando al backend: " + err.message); }
+    }
+
+    // Request payout
+    qs("payoutMethod").addEventListener("change", (e)=>{
+      const v = e.target.value;
+      qs("methodYape").style.display = v==="yape" ? "block" : "none";
+      qs("methodBcp").style.display = v==="bcp" ? "block" : "none";
+      qs("methodMp").style.display = v==="mercadopago" ? "block" : "none";
+    });
+
+    qs("btnRequestPayout").addEventListener("click", async ()=>{
+      const token = getToken();
+      if(!token){ show("Inicia sesión primero"); return; }
+      const amount = parseFloat(qs("payoutAmount").value || "0");
+      if(!amount || amount <= 0){ show("Ingresa un monto válido"); return; }
+      const cents = Math.round(amount * 100);
+      const method = qs("payoutMethod").value;
+
+      let payload = { amountCents: cents };
+
+      if(method === "yape"){
+        payload.bank = "YAPE";
+        payload.accountNumber = qs("yapePhone").value.trim();
+        payload.accountType = "yape_phone";
+        payload.holderName = qs("yapeHolderName").value.trim();
+        payload.holderDni = qs("yapeDniHolder").value.trim();
+      } else if(method === "bcp"){
+        payload.bank = "BCP";
+        payload.accountNumber = qs("bcpAccNumber").value.trim();
+        payload.accountType = qs("bcpAccType").value;
+        payload.holderName = qs("bcpHolderName").value.trim();
+        payload.holderDni = qs("bcpHolderDni").value.trim();
+      } else if(method === "mercadopago"){
+        payload.bank = "MERCADOPAGO";
+        payload.accountNumber = qs("mpEmail").value.trim();
+        payload.accountType = "mercadopago";
+        payload.holderName = qs("mpHolderName").value.trim();
+        payload.holderDni = qs("mpHolderDni").value.trim();
+      }
+
+      try {
+        const res = await fetch(API_BASE + "/api/payouts/request", {
+          method: "POST",
+          headers: { "Content-Type":"application/json", Authorization: "Bearer " + token },
+          body: JSON.stringify(payload)
+        });
+        const j = await res.json();
+        if(!res.ok){ qs("payoutResult").innerText = "Error: " + (j.error || JSON.stringify(j)); return; }
+        qs("payoutResult").innerText = "Solicitud creada (ID: " + j.payoutId + "). Estado: " + (j.status || "pending");
+        await refreshBalance();
+      } catch (err){ qs("payoutResult").innerText = "Error de conexión: " + err.message; }
+    });
+
+    // Wallet refresh
+    async function refreshBalance(){
+      const token = getToken();
+      if(!token){ qs("balance").innerText = "S/0.00"; return; }
+      try {
+        const res = await fetch(API_BASE + "/api/wallet", { headers: { Authorization: "Bearer " + token }});
+        if(!res.ok){ qs("balance").innerText = "S/0.00"; return; }
+        const j = await res.json();
+        const bal = j.balance ?? j.data?.balance ?? 0;
+        qs("balance").innerText = "S/" + (bal/100).toFixed(2);
+      } catch (err){ qs("balance").innerText = "S/0.00"; }
+    }
+
+    // Admin / import shortcuts
+    qs("btnImportVideos").addEventListener("click", ()=>{
+      const adminUrl = window.location.origin + "/admin";
+      window.open(adminUrl, "_blank");
+    });
+    qs("btnOpenAdmin").addEventListener("click", ()=>{ window.location.href = "/admin"; });
+
+    // Update UI after auth
+    function updateUIAfterAuth(){
+      const token = getToken();
+      if(token){
+        qs("authCard").style.display = "none";
+        qs("videosCard").style.display = "block";
+        qs("kycCard").style.display = "block";
+        qs("payoutCard").style.display = "block";
+      } else {
+        qs("authCard").style.display = "block";
+        qs("videosCard").style.display = "none";
+        qs("kycCard").style.display = "none";
+        qs("payoutCard").style.display = "none";
+      }
+      renderUserArea();
+    }
+
+    // Init on load
+    (function init(){
+      // If there's a stored token but no user info, try to fetch user (optional)
+      updateUIAfterAuth();
+      loadVideos();
+      refreshBalance();
+      setInterval(refreshBalance, 30_000);
+    })();
+  </script>
+</body>
+</html>
