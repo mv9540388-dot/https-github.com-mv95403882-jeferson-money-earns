@@ -1,0 +1,6 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,body,#__next{height:100%}
+body{background:linear-gradient(180deg,#071021,#031026);color:#e6eef8}
